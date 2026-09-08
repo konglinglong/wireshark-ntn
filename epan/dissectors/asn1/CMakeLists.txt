@@ -87,7 +87,6 @@ set(ASN1_SRC_DIRS
 	ngap
 	nist-csor
 	nr-rrc
-	nr-rrc-ntn
 	nrppa
 	ns_cert_exts
 	novell_pkis

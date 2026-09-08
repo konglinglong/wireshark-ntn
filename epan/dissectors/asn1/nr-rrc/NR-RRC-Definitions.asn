@@ -1047,7 +1047,19 @@ RRCReconfiguration-v1800-IEs ::=        SEQUENCE {
 
 RRCReconfiguration-v1830-IEs ::=        SEQUENCE {
     otherConfig-v1830                       OtherConfig-v1830                                                  OPTIONAL, -- Need M
-    nonCriticalExtension                    RRCReconfiguration-v1900-IEs                                       OPTIONAL
+    nonCriticalExtension                    NTN-Handover-PrivateIEs                                            OPTIONAL
+}
+
+-- ============================================================
+-- 私有扩展：跨星切换信息
+-- 用途:
+--   1.源侧重配快照（AS-Config）携带通知目标小区；
+--   2. 目标侧新建切换命令（RRCReconfiguration）下发通知自研终端
+-- ============================================================
+NTN-Handover-PrivateIEs ::=     SEQUENCE {
+    isCrossSatHo                BOOLEAN             OPTIONAL,  -- 跨星切换指示：源侧判定，目标侧/终端读取
+    sourceSatelliteId           INTEGER (0..65535)  OPTIONAL,  -- 源小区所属卫星标识：目标侧比对/排查用
+    nonCriticalExtension        SEQUENCE {}         OPTIONAL
 }
 
 RRCReconfiguration-v1900-IEs ::=        SEQUENCE {
@@ -1981,6 +1993,7 @@ SecurityModeFailure-IEs ::=         SEQUENCE {
 -- TAG-SIB1-START
 
 SIB1 ::=        SEQUENCE {
+    physicalCellID                      PhysCellId,
     cellSelectionInfo                   SEQUENCE {
         q-RxLevMin                          Q-RxLevMin,
         q-RxLevMinOffset                    INTEGER (1..8)                                              OPTIONAL,   -- Need S
@@ -3648,8 +3661,30 @@ ULInformationTransfer-IEs ::=       SEQUENCE {
 
 ULInformationTransfer-v1700-IEs ::=       SEQUENCE {
     dedicatedInfoF1c-r17                      DedicatedInfoF1c-r17                OPTIONAL,
-    nonCriticalExtension                      SEQUENCE {}                         OPTIONAL
+    nonCriticalExtension                      ULInformationTransfer-vPrivateSupiReport-IEs   OPTIONAL
 }
+
+ULInformationTransfer-vPrivateSupiReport-IEs ::= SEQUENCE {
+    supi-Report                          SUPI-Report                           OPTIONAL,
+    nonCriticalExtension                 SEQUENCE {}                           OPTIONAL
+}
+
+SUPI-Report ::= SEQUENCE {
+    mcc                                 MCC                                    OPTIONAL,  -- Cond MCC
+    mnc                                 MNC,
+    msin                                MSIN,
+    report-cause                        ENUMERATED {
+        initialReport,
+        periodicUpdate,
+        onTrigger,
+        ...,
+        spare5, spare4, spare3, spare2, spare1
+    }                                                                          OPTIONAL,
+    report-sequence-number              INTEGER (0..255)                       OPTIONAL,
+    ...
+}
+
+MSIN ::= SEQUENCE (SIZE (0..10)) OF MCC-MNC-Digit
 
 -- TAG-ULINFORMATIONTRANSFER-STOP
 -- TAG-ULINFORMATIONTRANSFERIRAT-START
@@ -5333,6 +5368,8 @@ BWP-UplinkCommon ::=                SEQUENCE {
     rach-ConfigCommon                   CHOICE {release NULL, setup RACH-ConfigCommon }                                      OPTIONAL,   -- Need M
     pusch-ConfigCommon                  CHOICE {release NULL, setup PUSCH-ConfigCommon }                                     OPTIONAL,   -- Need M
     pucch-ConfigCommon                  CHOICE {release NULL, setup PUCCH-ConfigCommon }                                     OPTIONAL,   -- Need M
+    rach-ConfigCommonNB                 CHOICE {release NULL, setup RACH-ConfigCommonNB }                                    OPTIONAL,   -- Need M
+    uci-ConfigCommon                    CHOICE {release NULL, setup UCI-ConfigCommon }                                       OPTIONAL,   -- Need M
     ...,
     [[
     rach-ConfigCommonIAB-r16            CHOICE {release NULL, setup RACH-ConfigCommon }                                      OPTIONAL,   -- Need M
@@ -5398,6 +5435,7 @@ BWP-UplinkDedicated ::=             SEQUENCE {
     configuredGrantConfig               CHOICE {release NULL, setup ConfiguredGrantConfig }                                  OPTIONAL,   -- Need M
     srs-Config                          CHOICE {release NULL, setup SRS-Config }                                             OPTIONAL,   -- Need M
     beamFailureRecoveryConfig           CHOICE {release NULL, setup BeamFailureRecoveryConfig }                              OPTIONAL,   -- Cond SpCellOnly
+    uci-Config                          CHOICE {release NULL, setup UCI-Config }                                             OPTIONAL,   -- Need M
     ...,
     [[
     sl-PUCCH-Config-r16                 CHOICE {release NULL, setup PUCCH-Config }                                           OPTIONAL,   -- Need M
@@ -5690,6 +5728,7 @@ ReconfigurationWithSync ::=         SEQUENCE {
         uplink                              RACH-ConfigDedicated,
         supplementaryUplink                 RACH-ConfigDedicated
     }                                                                                               OPTIONAL,   -- Need N
+    dVB-Config                          DVB-Config                                                   OPTIONAL,   -- Need N
     ...,
     [[
     smtc                                SSB-MTC                                                     OPTIONAL    -- Need S
@@ -5709,6 +5748,38 @@ ReconfigurationWithSync ::=         SEQUENCE {
     earlyCSI-Acquisition-r19        EarlyCSI-Acquisition-r19                                        OPTIONAL    -- Need N
     ]]
 }
+
+-- ============================================================
+-- 私有扩展：DVB 配置参数
+-- 用途：目标小区DVB调制参数，目标侧切换命令（RRCReconfiguration
+--  -> reconfigurationWithSync）下发给自研终端
+-- ============================================================
+DVB-Config ::=                      SEQUENCE {
+    symbolRate                          INTEGER (0..4294967295)                                           OPTIONAL,  -- 符号速率，uint32
+    rollOff                             ENUMERATED { rollOff035(1), rollOff025(2),
+                                                   rollOff020(3), rollOff015(4),
+                                                   rollOff010(5), rollOff005(6) }                         OPTIONAL,
+    polarization                        ENUMERATED { lhcp(0), rhcp(1),
+                                                   vertical(2), horizontal(3) }                           OPTIONAL,
+    nonCriticalExtension                SEQUENCE {}                 OPTIONAL
+}
+
+-- ASN1START
+Altitude ::= SEQUENCE {
+    altitudeDirection           ENUMERATED {height, depth},
+    altitude                    INTEGER (0..32767)               -- 15 bit field
+}
+
+Speed ::= INTEGER (0..2047)
+
+Ellipsoid-Point ::= SEQUENCE {
+    latitudeSign                ENUMERATED {north, south},
+    degreesLatitude             INTEGER (0..8388607),            -- 23 bit field
+    degreesLongitude            INTEGER (-8388608..8388607),     -- 24 bit field
+    altitude                    Altitude OPTIONAL,
+    speed                       Speed    OPTIONAL
+}
+-- ASN1STOP
 
 EarlyCSI-Acquisition-r19 ::=        SEQUENCE {
     early-NZP-CSI-RS-ResourceSet-r19    NZP-CSI-RS-ResourceSetId,
@@ -7438,16 +7509,15 @@ CSI-ReportConfigId ::=              INTEGER (0..maxNrofCSI-ReportConfigurations-
 -- TAG-CSI-REPORTPERIODICITYANDOFFSET-START
 
 CSI-ReportPeriodicityAndOffset ::=  CHOICE {
-    slots4                              INTEGER(0..3),
-    slots5                              INTEGER(0..4),
-    slots8                              INTEGER(0..7),
-    slots10                             INTEGER(0..9),
-    slots16                             INTEGER(0..15),
-    slots20                             INTEGER(0..19),
-    slots40                             INTEGER(0..39),
-    slots80                             INTEGER(0..79),
-    slots160                            INTEGER(0..159),
-    slots320                            INTEGER(0..319)
+    sf32                                INTEGER (0..31),
+    sf64                                INTEGER (0..63),
+    sf128                               INTEGER (0..127),
+    sf256                               INTEGER (0..255),
+    sf512                               INTEGER (0..511),
+    sf800                               INTEGER (0..799),
+    sf1280                              INTEGER (0..1279),
+    sf1800                              INTEGER (0..1799),
+    sf2560                              INTEGER (0..2559)
 }
 
 -- TAG-CSI-REPORTPERIODICITYANDOFFSET-STOP
@@ -11600,7 +11670,6 @@ PhysicalCellGroupConfig ::=         SEQUENCE {
     harq-ACK-SpatialBundlingPUCCH       ENUMERATED {true}                                               OPTIONAL,   -- Need S
     harq-ACK-SpatialBundlingPUSCH       ENUMERATED {true}                                               OPTIONAL,   -- Need S
     p-NR-FR1                            P-Max                                                           OPTIONAL,   -- Need R
-    pdsch-HARQ-ACK-Codebook             ENUMERATED {semiStatic, dynamic},
     tpc-SRS-RNTI                        RNTI-Value                                                      OPTIONAL,   -- Need R
     tpc-PUCCH-RNTI                      RNTI-Value                                                      OPTIONAL,   -- Need R
     tpc-PUSCH-RNTI                      RNTI-Value                                                      OPTIONAL,   -- Need R
@@ -12144,9 +12213,10 @@ PUCCH-format2 ::=                               SEQUENCE {
 }
 
 PUCCH-format3 ::=                               SEQUENCE {
-    nrofPRBs                                        INTEGER (1..16),
-    nrofSymbols                                     INTEGER (4..14),
-    startingSymbolIndex                             INTEGER(0..10)
+    startSC                                         INTEGER (1..24),
+    nrofSCs                                         INTEGER (1..24),
+    startSlot                                       INTEGER (1..8),
+    nrofSlots                                       INTEGER (1..32)
 }
 
 PUCCH-format4 ::=                               SEQUENCE {
@@ -12349,7 +12419,8 @@ PUSCH-Config ::=                        SEQUENCE {
     pusch-TimeDomainAllocationList          CHOICE {release NULL, setup PUSCH-TimeDomainResourceAllocationList }             OPTIONAL,   -- Need M
     pusch-AggregationFactor                 ENUMERATED { n2, n4, n8 }                                           OPTIONAL,   -- Need S
     mcs-Table                               ENUMERATED {qam256, qam64LowSE}                                     OPTIONAL,   -- Need S
-    mcs-TableTransformPrecoder              ENUMERATED {qam256, qam64LowSE}                                     OPTIONAL,   -- Need S
+    mcs-TableTransformPrecoder              ENUMERATED {qam256, qam64LowSE, psk}                               OPTIONAL,   -- Need S
+    pusch-TimeDomainAllocationListDCI-WT   CHOICE {release NULL, setup PUSCH-TimeDomainResourceAllocationList }             OPTIONAL,   -- Need M
     transformPrecoder                       ENUMERATED {enabled, disabled}                                      OPTIONAL,   -- Need S
     codebookSubset                          ENUMERATED {fullyAndPartialAndNonCoherent, partialAndNonCoherent,nonCoherent}
                                                                                                           OPTIONAL, -- Cond codebookBased
@@ -12552,6 +12623,7 @@ PUSCH-ConfigCommon ::=                  SEQUENCE {
     pusch-TimeDomainAllocationList          PUSCH-TimeDomainResourceAllocationList                              OPTIONAL,   -- Need R
     msg3-DeltaPreamble                      INTEGER (-1..6)                                                     OPTIONAL,   -- Need R
     p0-NominalWithGrant                     INTEGER (-202..24)                                                  OPTIONAL,   -- Need R
+    fdss-alpha                              ENUMERATED {s0dot125, s0dot25, s0dot325}                            OPTIONAL,   -- Need R
     ...
 }
 
@@ -12814,6 +12886,41 @@ QuantityConfigUTRA-FDD-r16 ::=      SEQUENCE {
 }
 
 -- TAG-QUANTITYCONFIG-STOP
+-- TAG-RACH-CONFIGCOMMONNB-START
+
+RACH-ConfigCommonNB ::= SEQUENCE {
+    prach-ConfigurationIndex            INTEGER (0..31),
+    msg1-FDM-spacing                    ENUMERATED {four, six, eight, twelve},
+    msg1-FDM                            ENUMERATED {one, two, four, eight},
+    msg1-FrequencyStartSC               INTEGER (0..3299),
+    preambleReceivedTargetPower         INTEGER (-202..-60),
+    preambleTransMax                    ENUMERATED {n3, n4, n5, n6, n7, n8, n10, n20, n50, n100, n200},
+    powerRampingStep                    ENUMERATED {dB0, dB2, dB4, dB6},
+    ra-ResponseWindow                   ENUMERATED {sl1, sl2, sl4, sl8, sl10, sl20, sl40, sl80},
+    totalNumberOfRA-Preambles           INTEGER (1..47),
+    ra-ContentionResolutionTimer        ENUMERATED {sf8, sf16, sf24, sf32, sf40, sf48, sf56, sf64}
+}
+
+-- TAG-RACH-CONFIGCOMMONNB-STOP
+-- TAG-UCI-CONFIGCOMMON-START
+
+UCI-ConfigCommon ::= SEQUENCE {
+    startSC                 INTEGER (0..3299),
+    nrOfSC                  INTEGER (1..3300),
+    nrOfSlot                INTEGER (1..32),
+    periodicity             ENUMERATED {sf8, sf16, sf24, sf32, sf40, sf48, sf56, sf64},
+    offsetSlot              INTEGER (0..79)
+}
+
+-- TAG-UCI-CONFIGCOMMON-STOP
+-- TAG-UCI-CONFIG-START
+
+UCI-Config ::= SEQUENCE {
+    uciResourceId       INTEGER (0..95)
+}
+
+-- TAG-UCI-CONFIG-STOP
+
 -- TAG-RACH-CONFIGCOMMON-START
 
 RACH-ConfigCommon ::=               SEQUENCE {
@@ -14628,7 +14735,7 @@ ServingCellConfig ::=               SEQUENCE {
                                                     spare7, spare6, spare5, spare4, spare3, spare2, spare1 }    OPTIONAL,   --Need R
     defaultDownlinkBWP-Id               BWP-Id                                                                  OPTIONAL,   -- Need S
     uplinkConfig                        UplinkConfig                                                            OPTIONAL,   -- Need M
-    supplementaryUplink                 UplinkConfig                                                            OPTIONAL,   -- Need M
+    supplementaryUplink                 SEQUENCE (SIZE (1..maxSUL)) OF UplinkConfig                              OPTIONAL,   -- Need M
     pdcch-ServingCellConfig             CHOICE {release NULL, setup PDCCH-ServingCellConfig }                                OPTIONAL,   -- Need M
     pdsch-ServingCellConfig             CHOICE {release NULL, setup PDSCH-ServingCellConfig }                                OPTIONAL,   -- Need M
     csi-MeasConfig                      CHOICE {release NULL, setup CSI-MeasConfig }                                         OPTIONAL,   -- Need M
@@ -14636,7 +14743,6 @@ ServingCellConfig ::=               SEQUENCE {
                                                     ms320, ms400, ms480, ms520, ms640, ms720,
                                                     ms840, ms1280, spare2,spare1}       OPTIONAL,   -- Cond ServingCellWithoutPUCCH
     crossCarrierSchedulingConfig        CrossCarrierSchedulingConfig                                            OPTIONAL,   -- Need M
-    tag-Id                              TAG-Id,
     dummy1                              ENUMERATED {enabled}                                                    OPTIONAL,   -- Need R
     pathlossReferenceLinking            ENUMERATED {spCell, sCell}                                              OPTIONAL,   -- Cond SCellOnly
     servingCellMO                       MeasObjectId                                                            OPTIONAL,   -- Cond MeasObject
@@ -14959,17 +15065,10 @@ ServingCellConfigCommon ::=         SEQUENCE {
 -- TAG-SERVINGCELLCONFIGCOMMONSIB-START
 
 ServingCellConfigCommonSIB ::=      SEQUENCE {
-    downlinkConfigCommon                DownlinkConfigCommonSIB,
     uplinkConfigCommon                  UplinkConfigCommonSIB                                       OPTIONAL, -- Need R
-    supplementaryUplink                 UplinkConfigCommonSIB                                       OPTIONAL, -- Need R
+    supplementaryUplink                 SEQUENCE (SIZE (1..maxSUL)) OF UplinkConfigCommonSIB         OPTIONAL, -- Need R
     n-TimingAdvanceOffset               ENUMERATED { n0, n25600, n39936 }                           OPTIONAL, -- Need S
-    ssb-PositionsInBurst                SEQUENCE {
-        inOneGroup                          BIT STRING (SIZE (8)),
-        groupPresence                       BIT STRING (SIZE (8))                                   OPTIONAL  -- Cond FR2-Only
-    },
-    ssb-PeriodicityServingCell          ENUMERATED {ms5, ms10, ms20, ms40, ms80, ms160},
     tdd-UL-DL-ConfigurationCommon       TDD-UL-DL-ConfigCommon                                      OPTIONAL, -- Cond TDD
-    ss-PBCH-BlockPower                  INTEGER (-60..50),
     ...,
     [[
     channelAccessMode-r16               CHOICE {
@@ -28989,6 +29088,8 @@ maxRA-Occasions-1                       INTEGER ::= 511     -- Maximum number of
 maxRA-SSB-Resources                     INTEGER ::= 64
 maxSCSs                                 INTEGER ::= 5
 maxSecondaryCellGroups                  INTEGER ::= 3
+maxSUL                                  INTEGER ::= 5       -- Max SUL carriers
+maxUciResource                          INTEGER ::= 96
 maxNrofServingCellsEUTRA                INTEGER ::= 32
 maxMBSFN-Allocations                    INTEGER ::= 8
 maxNrofMultiBands                       INTEGER ::= 8
