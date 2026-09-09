@@ -7169,6 +7169,7 @@ static int hf_nr_rrc_additionalDMRS;              /* T_additionalDMRS */
 static int hf_nr_rrc_maxCodeRate;                 /* PUCCH_MaxCodeRate */
 static int hf_nr_rrc_nrofSlots;                   /* T_nrofSlots */
 static int hf_nr_rrc_pi2BPSK;                     /* T_pi2BPSK */
+static int hf_nr_rrc_mcs;                         /* INTEGER_0_15 */
 static int hf_nr_rrc_simultaneousHARQ_ACK_CSI;    /* T_simultaneousHARQ_ACK_CSI */
 static int hf_nr_rrc_maxCodeRateLP_r17;           /* PUCCH_MaxCodeRate */
 static int hf_nr_rrc_pucch_ResourceSetId;         /* PUCCH_ResourceSetId */
@@ -7213,9 +7214,9 @@ static int hf_nr_rrc_nrofSymbols_01;              /* INTEGER_4_14 */
 static int hf_nr_rrc_startingSymbolIndex_01;      /* INTEGER_0_10 */
 static int hf_nr_rrc_timeDomainOCC;               /* INTEGER_0_6 */
 static int hf_nr_rrc_nrofPRBs_01;                 /* INTEGER_1_16 */
-static int hf_nr_rrc_startSC;                     /* INTEGER_1_24 */
+static int hf_nr_rrc_startSC;                     /* INTEGER_0_23 */
 static int hf_nr_rrc_nrofSCs;                     /* INTEGER_1_24 */
-static int hf_nr_rrc_startSlot;                   /* INTEGER_1_8 */
+static int hf_nr_rrc_startSlot;                   /* INTEGER_0_7 */
 static int hf_nr_rrc_nrofSlots_01;                /* INTEGER_1_32 */
 static int hf_nr_rrc_occ_Length;                  /* T_occ_Length */
 static int hf_nr_rrc_occ_Index;                   /* T_occ_Index */
@@ -114464,9 +114465,9 @@ dissect_nr_rrc_INTEGER_1_24(tvbuff_t *tvb _U_, uint32_t offset _U_, asn1_ctx_t *
 
 
 static const per_sequence_t PUCCH_format3_sequence[] = {
-  { &hf_nr_rrc_startSC      , ASN1_NO_EXTENSIONS     , ASN1_NOT_OPTIONAL, dissect_nr_rrc_INTEGER_1_24 },
+  { &hf_nr_rrc_startSC      , ASN1_NO_EXTENSIONS     , ASN1_NOT_OPTIONAL, dissect_nr_rrc_INTEGER_0_23 },
   { &hf_nr_rrc_nrofSCs      , ASN1_NO_EXTENSIONS     , ASN1_NOT_OPTIONAL, dissect_nr_rrc_INTEGER_1_24 },
-  { &hf_nr_rrc_startSlot    , ASN1_NO_EXTENSIONS     , ASN1_NOT_OPTIONAL, dissect_nr_rrc_INTEGER_1_8 },
+  { &hf_nr_rrc_startSlot    , ASN1_NO_EXTENSIONS     , ASN1_NOT_OPTIONAL, dissect_nr_rrc_INTEGER_0_7 },
   { &hf_nr_rrc_nrofSlots_01 , ASN1_NO_EXTENSIONS     , ASN1_NOT_OPTIONAL, dissect_nr_rrc_INTEGER_1_32 },
   { NULL, 0, 0, NULL }
 };
@@ -114709,6 +114710,7 @@ static const per_sequence_t PUCCH_FormatConfig_sequence[] = {
   { &hf_nr_rrc_maxCodeRate  , ASN1_NO_EXTENSIONS     , ASN1_OPTIONAL    , dissect_nr_rrc_PUCCH_MaxCodeRate },
   { &hf_nr_rrc_nrofSlots    , ASN1_NO_EXTENSIONS     , ASN1_OPTIONAL    , dissect_nr_rrc_T_nrofSlots },
   { &hf_nr_rrc_pi2BPSK      , ASN1_NO_EXTENSIONS     , ASN1_OPTIONAL    , dissect_nr_rrc_T_pi2BPSK },
+  { &hf_nr_rrc_mcs          , ASN1_NO_EXTENSIONS     , ASN1_OPTIONAL    , dissect_nr_rrc_INTEGER_0_15 },
   { &hf_nr_rrc_simultaneousHARQ_ACK_CSI, ASN1_NO_EXTENSIONS     , ASN1_OPTIONAL    , dissect_nr_rrc_T_simultaneousHARQ_ACK_CSI },
   { NULL, 0, 0, NULL }
 };
@@ -240487,6 +240489,10 @@ proto_register_nr_rrc(void) {
       { "pi2BPSK", "nr-rrc.pi2BPSK",
         FT_UINT32, BASE_DEC, VALS(nr_rrc_T_pi2BPSK_vals), 0,
         NULL, HFILL }},
+    { &hf_nr_rrc_mcs,
+      { "mcs", "nr-rrc.mcs",
+        FT_UINT32, BASE_DEC, NULL, 0,
+        "INTEGER_0_15", HFILL }},
     { &hf_nr_rrc_simultaneousHARQ_ACK_CSI,
       { "simultaneousHARQ-ACK-CSI", "nr-rrc.simultaneousHARQ_ACK_CSI",
         FT_UINT32, BASE_DEC, VALS(nr_rrc_T_simultaneousHARQ_ACK_CSI_vals), 0,
@@ -240666,7 +240672,7 @@ proto_register_nr_rrc(void) {
     { &hf_nr_rrc_startSC,
       { "startSC", "nr-rrc.startSC",
         FT_UINT32, BASE_DEC, NULL, 0,
-        "INTEGER_1_24", HFILL }},
+        "INTEGER_0_23", HFILL }},
     { &hf_nr_rrc_nrofSCs,
       { "nrofSCs", "nr-rrc.nrofSCs",
         FT_UINT32, BASE_DEC, NULL, 0,
@@ -240674,7 +240680,7 @@ proto_register_nr_rrc(void) {
     { &hf_nr_rrc_startSlot,
       { "startSlot", "nr-rrc.startSlot",
         FT_UINT32, BASE_DEC, NULL, 0,
-        "INTEGER_1_8", HFILL }},
+        "INTEGER_0_7", HFILL }},
     { &hf_nr_rrc_nrofSlots_01,
       { "nrofSlots", "nr-rrc.nrofSlots",
         FT_UINT32, BASE_DEC, NULL, 0,

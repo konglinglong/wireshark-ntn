@@ -12122,6 +12122,7 @@ PUCCH-FormatConfig ::=                  SEQUENCE {
     maxCodeRate                             PUCCH-MaxCodeRate                                                     OPTIONAL, -- Need R
     nrofSlots                               ENUMERATED {n2,n4,n8}                                                 OPTIONAL, -- Need S
     pi2BPSK                                 ENUMERATED {enabled}                                                  OPTIONAL, -- Need R
+    mcs                                     INTEGER (0..15)                                                       OPTIONAL, -- Need R
     simultaneousHARQ-ACK-CSI                ENUMERATED {true}                                                     OPTIONAL  -- Need R
 }
 
@@ -12213,9 +12214,9 @@ PUCCH-format2 ::=                               SEQUENCE {
 }
 
 PUCCH-format3 ::=                               SEQUENCE {
-    startSC                                         INTEGER (1..24),
+    startSC                                         INTEGER (0..23),
     nrofSCs                                         INTEGER (1..24),
-    startSlot                                       INTEGER (1..8),
+    startSlot                                       INTEGER (0..7),
     nrofSlots                                       INTEGER (1..32)
 }
 
