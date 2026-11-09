@@ -15,7 +15,11 @@ set_module_info(pluginifdemo 0 0 3 0)
 SET(CMAKE_AUTOMOC ON)
 SET(CMAKE_AUTOUIC ON)
 
-set(qtver "6")
+if(USE_qt6)
+	set(qtver "6")
+else()
+	set(qtver "5")
+endif()
 
 find_package(Qt${qtver}Core)
 find_package(Qt${qtver}PrintSupport)

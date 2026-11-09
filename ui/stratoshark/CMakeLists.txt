@@ -921,18 +921,20 @@ target_include_directories(ui_stratoshark
 		${CMAKE_SOURCE_DIR}/ui/qt/lua_debugger
 )
 
-target_link_libraries(ui_stratoshark PUBLIC
-	Qt6::Concurrent
-	Qt6::Core5Compat
-	Qt6::PrintSupport
-	Qt6::Svg
-	Qt6::Widgets
-)
-if(Qt6Multimedia_FOUND)
-	target_link_libraries(ui_stratoshark PUBLIC Qt6::Multimedia)
-endif()
-if(Qt6DBus_FOUND)
-	target_link_libraries(ui_stratoshark PUBLIC Qt6::DBus)
+if(USE_qt6)
+	target_link_libraries(ui_stratoshark PUBLIC
+		Qt6::Concurrent
+		Qt6::Core5Compat
+		Qt6::PrintSupport
+		Qt6::Svg
+		Qt6::Widgets
+	)
+	if(Qt6Multimedia_FOUND)
+		target_link_libraries(ui_stratoshark PUBLIC Qt6::Multimedia)
+	endif()
+	if(Qt6DBus_FOUND)
+		target_link_libraries(ui_stratoshark PUBLIC Qt6::DBus)
+	endif()
 endif()
 
 set_target_properties(ui_stratoshark PROPERTIES

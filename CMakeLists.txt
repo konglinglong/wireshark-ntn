@@ -1539,36 +1539,37 @@ endif()
 if(BUILD_wireshark OR BUILD_stratoshark)
 	# We don't use any QVulkan* classes, so tell Qt's CMake modules not to look for Vulkan.
 	set(CMAKE_DISABLE_FIND_PACKAGE_WrapVulkanHeaders ON)
-	set(qtver 6)
-	if(DEFINED ENV{WIRESHARK_QT6_PREFIX_PATH})
-		list(APPEND CMAKE_PREFIX_PATH $ENV{WIRESHARK_QT6_PREFIX_PATH})
-	endif()
+	if(USE_qt6)
+		set(qtver 6)
+		if(DEFINED ENV{WIRESHARK_QT6_PREFIX_PATH})
+			list(APPEND CMAKE_PREFIX_PATH $ENV{WIRESHARK_QT6_PREFIX_PATH})
+		endif()
 
-	find_package(Qt6 6.2 REQUIRED
-		COMPONENTS
-			Core
-			Concurrent
-			Core5Compat
-			Gui
-			LinguistTools
-			Network
-			PrintSupport
-			Svg
-			Widgets
-		OPTIONAL_COMPONENTS
-			DBus
-	)
+		find_package(Qt6 6.2 REQUIRED
+			COMPONENTS
+				Core
+				Concurrent
+				Core5Compat
+				Gui
+				LinguistTools
+				Network
+				PrintSupport
+				Svg
+				Widgets
+			OPTIONAL_COMPONENTS
+				DBus
+				Multimedia
+		)
 
-	if (SPEEXDSP_FOUND)
-		find_package(Qt6 ${Qt6_VERSION} REQUIRED OPTIONAL_COMPONENTS Multimedia)
-	endif()
-
-	if (WIN32 AND Qt6Widgets_VERSION VERSION_LESS 6.5.3)
-		message(WARNING "Qt 6.5.3 or later is required.")
-	endif()
-	if (APPLE AND Qt6Widgets_VERSION VERSION_LESS 6.5.3)
-		message(WARNING "Qt 6.5.3 or later is required.")
-	endif()
+		if (WIN32 AND Qt6Widgets_VERSION VERSION_LESS 6.5.3)
+			message(WARNING "Qt 6.5.3 or later is required.")
+		endif()
+		if (APPLE AND Qt6Widgets_VERSION VERSION_LESS 6.5.3)
+			message(WARNING "Qt 6.5.3 or later is required.")
+		endif()
+	else() # USE_qt6
+		message(FATAL_ERROR "Support for building with Qt 5 has been removed.")
+	endif() # USE_qt6
 
 	set(QT_FOUND ON)
 	if(WIN32)
@@ -1576,6 +1577,12 @@ if(BUILD_wireshark OR BUILD_stratoshark)
 	endif()
 	if(APPLE)
 		ws_find_package(Sparkle ENABLE_SPARKLE HAVE_SOFTWARE_UPDATE 2)
+	endif()
+	if(Qt6Multimedia_FOUND)
+		set(QT_MULTIMEDIA_LIB 1)
+	endif()
+	if(Qt6DBus_FOUND)
+		set(QT_DBUS_LIB 1)
 	endif()
 	if(NOT DEFINED MOC_OPTIONS)
 		# Squelch moc verbose "nothing to do" output
@@ -1714,7 +1721,7 @@ if (QT_FOUND)
 	# Use qmake to find windeployqt and macdeployqt. Ideally one of
 	# the modules in ${QTDIR}/lib/cmake would do this for us.
 	if(WIN32)
-		if (USE_MSYSTEM)
+		if (USE_qt6 AND USE_MSYSTEM)
 			set(_windeployqt_name "windeployqt-qt6")
 		else()
 			set(_windeployqt_name "windeployqt")
@@ -1966,7 +1973,7 @@ if(BUILD_wireshark AND QT_FOUND)
 	add_subdirectory( ui/qt )
 	unset(CMAKE_FOLDER)
 	add_subdirectory( ui/plugins )
-elseif(BUILD_wireshark)
+elseif(BUILD_wireshark AND USE_qt6)
 	message(WARNING "Building Wireshark requested but Qt 6.2 or later not found.")
 endif()
 

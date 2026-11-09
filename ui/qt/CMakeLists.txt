@@ -987,19 +987,21 @@ add_library(qtui OBJECT
 	wireshark-tap-register.c
 )
 
-target_link_libraries(qtui PUBLIC
-	Qt6::Concurrent
-	Qt6::Core5Compat
-	Qt6::Network
-	Qt6::PrintSupport
-	Qt6::Svg
-	Qt6::Widgets
-)
-if(Qt6Multimedia_FOUND)
-	target_link_libraries(qtui PUBLIC Qt6::Multimedia)
-endif()
-if(Qt6DBus_FOUND)
-	target_link_libraries(qtui PUBLIC Qt6::DBus)
+if(USE_qt6)
+	target_link_libraries(qtui PUBLIC
+		Qt6::Concurrent
+		Qt6::Core5Compat
+		Qt6::Network
+		Qt6::PrintSupport
+		Qt6::Svg
+		Qt6::Widgets
+	)
+	if(Qt6Multimedia_FOUND)
+		target_link_libraries(qtui PUBLIC Qt6::Multimedia)
+	endif()
+	if(Qt6DBus_FOUND)
+		target_link_libraries(qtui PUBLIC Qt6::DBus)
+	endif()
 endif()
 
 target_include_directories(qtui
