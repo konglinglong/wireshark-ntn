@@ -448,7 +448,9 @@ MainApplication::MainApplication(int &argc,  char **argv) :
 #endif
 
     Q_INIT_RESOURCE(about);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     Q_INIT_RESOURCE(i18n);
+#endif
     Q_INIT_RESOURCE(layout);
     Q_INIT_RESOURCE(stock_icons);
     Q_INIT_RESOURCE(languages);
