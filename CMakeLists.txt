@@ -1574,7 +1574,7 @@ if(BUILD_wireshark OR BUILD_stratoshark)
 		endif()
 		message(DEPRECATION "Support for building with Qt 5 will be removed in the future.")
 		if(APPLE OR WIN32)
-			message(FATAL_ERROR "Qt 6 is required to build on ${CMAKE_SYSTEM_NAME}.")
+			message(STATUS "Qt6 requirement disabled (forced Qt5 patch)")
 		endif()
 
 		set(QT5_PACKAGELIST
@@ -1590,6 +1590,7 @@ if(BUILD_wireshark OR BUILD_stratoshark)
 			# DBus is a core component of Qt6, but was an add-on in Qt5.
 			Qt5DBus
 			Qt5Multimedia
+			Qt5WinExtras
 		)
 		foreach(_qt5_package IN LISTS QT5_PACKAGELIST)
 			find_package(${_qt5_package} REQUIRED ${QT5_FIND_PACKAGE_OPTIONS})
