@@ -20,6 +20,7 @@ function print_usage() {
 	printf "\\t--install-optional: install optional software as well\\n"
 	printf "\\t--install-deb-deps: install packages required to build the .deb file\\n"
 	printf "\\t--install-test-deps: install packages required to run all tests\\n"
+	printf "\\t--install-qt5-deps: force installation of packages required to use Qt5 (not recommended)\\n"
 	printf "\\t--install-qt6-deps: force installation of packages required to use Qt6\\n"
 	printf "\\t--install-all: install everything\\n"
 	printf "\\t[other]: other options are passed as-is to apt\\n"
@@ -48,6 +49,7 @@ function add_package() {
 ADDITIONAL=0
 DEBDEPS=0
 TESTDEPS=0
+ADD_QT5=0
 ADD_QT6=0
 HAVE_ADD_QT=0
 OPTIONS=
@@ -66,6 +68,9 @@ for arg; do
 		--install-test-deps)
 			TESTDEPS=1
 			;;
+		--install-qt5-deps)
+			ADD_QT5=1
+			;;
 		--install-qt6-deps)
 			ADD_QT6=1
 			;;
@@ -73,6 +78,7 @@ for arg; do
 			ADDITIONAL=1
 			DEBDEPS=1
 			TESTDEPS=1
+			ADD_QT5=1
 			ADD_QT6=1
 			HAVE_ADD_QT=1
 			;;
@@ -106,6 +112,17 @@ BASIC_LIST="
 	python3
 	"
 
+QT5_LIST="
+	libqt5svg5-dev
+	qt5-qmake
+	qtbase5-dev
+	qtbase5-dev-tools
+	qtchooser
+	qtmultimedia5-dev
+	qttools5-dev
+	qttools5-dev-tools
+	"
+
 QT6_LIST="
 	freeglut3-dev
 	libvulkan-dev
@@ -131,6 +148,12 @@ QT6_LIST="$QT6_LIST libqt6core5compat6-dev"
 add_package QT6_LIST qt6-svg-dev ||
 QT6_LIST="$QT6_LIST libqt6svg6-dev"
 
+if [ $ADD_QT5 -ne 0 ]
+then
+	BASIC_LIST="$BASIC_LIST $QT5_LIST"
+	HAVE_ADD_QT=1
+fi
+
 if [ $ADD_QT6 -ne 0 ]
 then
 	BASIC_LIST="$BASIC_LIST $QT6_LIST"
@@ -139,10 +162,13 @@ fi
 
 if [ $HAVE_ADD_QT -eq 0 ]
 then
-	# The user didn't select a Qt version. Select Qt 6 if it's available.
+	# The user didn't select a Qt version. Select Qt 6 if it's available, otherwise Qt 5.
 	if apt-cache show qt6-base-dev 2&> /dev/null ; then
 		echo "Installing Qt6."
 		BASIC_LIST="$BASIC_LIST $QT6_LIST"
+	else
+		echo "Installing Qt5."
+		BASIC_LIST="$BASIC_LIST $QT5_LIST"
 	fi
 fi
 

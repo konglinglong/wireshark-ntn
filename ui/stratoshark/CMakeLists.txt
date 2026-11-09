@@ -7,7 +7,11 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 
-set(qtver "6")
+if(USE_qt6)
+  set(qtver "6")
+else()
+  set(qtver "5")
+endif()
 
 ADD_CUSTOM_CMAKE_INCLUDE()
 
@@ -846,6 +850,19 @@ qt_add_resources(STRATOSHARK_QT_QRC
 	OPTIONS ${CMAKE_AUTORCC_OPTIONS}
 )
 
+if (USE_qt6)
+	QT6_ADD_TRANSLATION(STRATOSHARK_QT_QM ${STRATOSHARK_QT_TS} OPTIONS -silent)
+else()
+	QT5_ADD_TRANSLATION(STRATOSHARK_QT_QM ${STRATOSHARK_QT_TS} OPTIONS -silent)
+endif()
+
+add_custom_target(
+	stratoshark_translations
+	DEPENDS
+		${STRATOSHARK_QT_QM}
+)
+set_target_properties(stratoshark_translations PROPERTIES FOLDER "UI")
+
 set_source_files_properties(
 	${STRATOSHARK_QT_FILES}
 	PROPERTIES
@@ -906,6 +923,11 @@ add_library(ui_stratoshark OBJECT
 
 target_include_directories(ui_stratoshark
 	SYSTEM PRIVATE
+		# Include Qt before anything else, see the comment about
+		# QT5_INCLUDE_DIRS in the top-level CMakeLists.txt
+		# Basically, qt@5 headers should be prioritized over qt@6 which
+		# would be found due to GCRYPT_INCLUDE_DIRS=/usr/local/include
+		${QT5_INCLUDE_DIRS}
 		${GCRYPT_INCLUDE_DIRS}
 		${MINIZIP_INCLUDE_DIRS}
 		${MINIZIPNG_INCLUDE_DIRS}
@@ -936,6 +958,11 @@ if(USE_qt6)
 		target_link_libraries(ui_stratoshark PUBLIC Qt6::DBus)
 	endif()
 endif()
+
+target_compile_definitions(ui_stratoshark
+	PUBLIC
+		${QT5_COMPILE_DEFINITIONS}
+)
 
 set_target_properties(ui_stratoshark PROPERTIES
 	LINK_FLAGS "${WS_LINK_FLAGS}"

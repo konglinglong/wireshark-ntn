@@ -56,7 +56,7 @@ The following changes have been made since version 4.6.0:
 * The Default profile now has additional column "Delta", showing the delta time from the previous displayed packet.
 
 * Name Resolution
-  SMI paths are now searched recursively. This makes it easier to use MIBs provided by libsmi.
+  SMI paths are now recursed by Wireshark to provide subfolder to the SMI path.  MIBs provided by Wireshark now reflect the folder structure provided by libsmi.
 
 Many other improvements have been made.
 See the “New and Updated Features” section below for more details.
