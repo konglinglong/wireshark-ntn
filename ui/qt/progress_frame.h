@@ -16,6 +16,11 @@ namespace Ui {
 class ProgressFrame;
 }
 
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0)) && defined(Q_OS_WIN)
+#include <QWinTaskbarButton>
+#include <QWinTaskbarProgress>
+#endif
+
 class ProgressFrame;
 class QDialogButtonBox;
 class QElapsedTimer;

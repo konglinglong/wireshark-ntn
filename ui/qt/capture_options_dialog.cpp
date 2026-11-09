@@ -274,8 +274,13 @@ CaptureOptionsDialog::CaptureOptionsDialog(QWidget *parent) :
     ui->MBSpinBox->setMaximum(2000000000);
     ui->stopMBSpinBox->setMaximum(2000000000);
 
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    connect(ui->MBComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &CaptureOptionsDialog::MBComboBoxIndexChanged);
+    connect(ui->stopMBComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &CaptureOptionsDialog::stopMBComboBoxIndexChanged);
+#else
     connect(ui->MBComboBox, &QComboBox::currentIndexChanged, this, &CaptureOptionsDialog::MBComboBoxIndexChanged);
     connect(ui->stopMBComboBox, &QComboBox::currentIndexChanged, this, &CaptureOptionsDialog::stopMBComboBoxIndexChanged);
+#endif
 
     ui->tabWidget->setCurrentIndex(0);
 
@@ -1006,7 +1011,11 @@ void CaptureOptionsDialog::on_compileBPF_clicked()
         QString device_name = ti->data(col_interface_, Qt::UserRole).toString();
         device = getDeviceByName(device_name);
         if (!device) continue;
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         interfaces.emplaceBack(device);
+#else
+        interfaces.append(device);
+#endif
     }
 
     CompiledFilterOutput *cfo = new CompiledFilterOutput(this, interfaces);
@@ -1494,7 +1503,11 @@ QWidget* InterfaceTreeDelegate::createEditor(QWidget *parent, const QStyleOption
             sb->setValue(snap);
             sb->setWrapping(true);
             sb->setSpecialValueText(tr("default"));
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             connect(sb, &QSpinBox::valueChanged, this, &InterfaceTreeDelegate::snapshotLengthChanged);
+#else
+            connect(sb, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &InterfaceTreeDelegate::snapshotLengthChanged);
+#endif
             w = (QWidget*) sb;
             break;
         }
@@ -1504,7 +1517,11 @@ QWidget* InterfaceTreeDelegate::createEditor(QWidget *parent, const QStyleOption
             sb->setRange(1, WTAP_MAX_PACKET_SIZE_STANDARD);
             sb->setValue(buffer);
             sb->setWrapping(true);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
             connect(sb, &QSpinBox::valueChanged, this, &InterfaceTreeDelegate::bufferSizeChanged);
+#else
+            connect(sb, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, &InterfaceTreeDelegate::bufferSizeChanged);
+#endif
             w = (QWidget*) sb;
             break;
         }

@@ -99,6 +99,9 @@
 #include <QUrl>
 #include <qmath.h>
 
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+#include <QFontDatabase>
+#endif
 #include <QMimeDatabase>
 
 #include <QStyleHints>
@@ -133,6 +136,18 @@ private:
         mime_db.mimeTypeForData(QByteArray());
     }
 };
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+// Populating the font database can be slow as well.
+class FontDatabaseInitThread : public QRunnable
+{
+private:
+    void run()
+    {
+        QFontDatabase font_db;
+    }
+};
+#endif
 
 void
 topic_action(topic_action_e action)
@@ -427,6 +442,10 @@ MainApplication::MainApplication(int &argc,  char **argv) :
 
     MimeDatabaseInitThread *mime_db_init_thread = new(MimeDatabaseInitThread);
     QThreadPool::globalInstance()->start(mime_db_init_thread);
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    FontDatabaseInitThread *font_db_init_thread = new (FontDatabaseInitThread);
+    QThreadPool::globalInstance()->start(font_db_init_thread);
+#endif
 
     Q_INIT_RESOURCE(about);
     Q_INIT_RESOURCE(i18n);
@@ -453,6 +472,14 @@ MainApplication::MainApplication(int &argc,  char **argv) :
     /* RichEd20.DLL is needed for native file dialog filter entries. */
     ws_load_library("riched20.dll");
 #endif // Q_OS_WIN
+
+#if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
+    setAttribute(Qt::AA_UseHighDpiPixmaps);
+#endif
+
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    setAttribute(Qt::AA_DisableWindowContextHelpButton);
+#endif
 
     // We use a lot of style sheets that base their colors on the main
     // application palette, so this works better.
@@ -832,37 +859,40 @@ static void switchTranslator(QTranslator& myTranslator, const QLocale &locale, c
 void MainApplication::loadLanguage(const QString newLanguage)
 {
     QLocale locale;
+    QString localeLanguage;
     const char* env_prefix = application_configuration_environment_prefix();
 
     if (newLanguage.isEmpty() || newLanguage == USE_SYSTEM_LANGUAGE) {
         locale = QLocale::system();
+        localeLanguage = locale.name();
     } else {
-        locale = QLocale(newLanguage);
+        localeLanguage = newLanguage;
+        locale = QLocale(localeLanguage);
     }
 
     QLocale::setDefault(locale);
-
-    // Search path list ordered by priority. Prefer personal configuration
-    // to global datadir to embedded resources to Qt global directory.
-    QStringList searchPath;
-    searchPath.emplaceBack(gchar_free_to_qstring(get_persconffile_path("languages", false, env_prefix)));
-    searchPath.emplaceBack(QStringLiteral("%1/languages").arg(get_datafile_dir(env_prefix)));
-    searchPath.emplaceBack(QStringLiteral(":/i18n/"));
-
-#if QT_VERSION >= QT_VERSION_CHECK(6, 8, 0)
-    searchPath.append(QLibraryInfo::path(QLibraryInfo::TranslationsPath));
-#else
-    searchPath.emplaceBack(QLibraryInfo::path(QLibraryInfo::TranslationsPath));
-#endif
-
-    // Translations are searched for in the reverse order in which they were
-    // installed, so install the Qt generic translator first and ours last.
-    switchTranslator(mainApp->translatorQt, locale, QStringLiteral("qt"), searchPath);
-
-    // XXX - Yes, the translation files are also wireshark_%1.qm for Stratoshark.
-    // There is a stratoshark_en.[ts|qm] file too (for plurals?) though I'm
-    // not sure if it's used properly.
-    switchTranslator(mainApp->translator, locale, QStringLiteral("wireshark"), searchPath);
+    switchTranslator(mainApp->translator,
+            QStringLiteral("wireshark_%1.qm").arg(localeLanguage), QStringLiteral(":/i18n/"));
+    if (QFile::exists(QStringLiteral("%1/%2/wireshark_%3.qm")
+            .arg(get_datafile_dir(env_prefix)).arg("languages").arg(localeLanguage)))
+        switchTranslator(mainApp->translator,
+                QStringLiteral("wireshark_%1.qm").arg(localeLanguage), QStringLiteral("%1/languages").arg(get_datafile_dir(env_prefix)));
+    if (QFile::exists(QStringLiteral("%1/wireshark_%3.qm")
+            .arg(gchar_free_to_qstring(get_persconffile_path("languages", false, env_prefix))).arg(localeLanguage)))
+        switchTranslator(mainApp->translator,
+                QStringLiteral("wireshark_%1.qm").arg(localeLanguage), gchar_free_to_qstring(get_persconffile_path("languages", false, env_prefix)));
+    if (QFile::exists(QStringLiteral("%1/qt_%2.qm")
+            .arg(get_datafile_dir(env_prefix)).arg(localeLanguage))) {
+        switchTranslator(mainApp->translatorQt,
+                QStringLiteral("qt_%1.qm").arg(localeLanguage), QString(get_datafile_dir(env_prefix)));
+    } else if (QFile::exists(QStringLiteral("%1/qt_%2.qm")
+            .arg(get_datafile_dir(env_prefix)).arg(localeLanguage.left(localeLanguage.lastIndexOf('_'))))) {
+        switchTranslator(mainApp->translatorQt,
+                QStringLiteral("qt_%1.qm").arg(localeLanguage.left(localeLanguage.lastIndexOf('_'))), QString(get_datafile_dir(env_prefix)));
+    } else {
+        QString translationPath = QLibraryInfo::path(QLibraryInfo::TranslationsPath);
+        switchTranslator(mainApp->translatorQt, QStringLiteral("qt_%1.qm").arg(localeLanguage), translationPath);
+    }
 }
 
 void MainApplication::doTriggerMenuItem(MainMenuItem menuItem)

@@ -771,7 +771,11 @@ void ImportTextDialog::enableFieldWidgets(bool enable_direction_input, bool enab
 void ImportTextDialog::on_dataEncodingComboBox_currentIndexChanged(int index)
 {
     QVariant val = ti_ui_->dataEncodingComboBox->itemData(index);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     if (val.canConvert<int>())
+#else
+    if (val != QVariant::Invalid)
+#endif
     {
         // data_encoding_ok = true;
         import_info_.regex.encoding = (enum data_encoding) val.toUInt();
@@ -927,7 +931,11 @@ void ImportTextDialog::enableHeaderWidgets(uint encapsulation) {
 void ImportTextDialog::on_encapComboBox_currentIndexChanged(int index)
 {
     QVariant val = ti_ui_->encapComboBox->itemData(index);
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     if (val.canConvert<int>())
+#else
+    if (val != QVariant::Invalid)
+#endif
     {
         import_info_.encapsulation = val.toUInt();
     } else {

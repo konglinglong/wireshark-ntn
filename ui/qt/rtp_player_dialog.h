@@ -27,7 +27,11 @@
 #include <ui/qt/widgets/qcustomplot.h>
 
 #ifdef QT_MULTIMEDIA_LIB
+# if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 # include <QAudioDevice>
+# else
+# include <QAudioDeviceInfo>
+# endif
 #endif
 
 namespace Ui {
@@ -615,10 +619,12 @@ private slots:
      */
     void on_actionReadCapture_triggered();
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     /**
      * @brief Handles state changes in the audio sink.
      */
     void sinkStateChanged();
+#endif
 
 #endif
 private:
@@ -680,6 +686,7 @@ private:
     /** @brief List of RTP streams currently playing audio. */
     QList<RtpAudioStream *> playing_streams_;
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     /** @brief Audio sink used as a timing marker. */
     QAudioSink *marker_stream_;
 
@@ -688,6 +695,10 @@ private:
 
     /** @brief Offset difference used to shift play cursor to the correct place. */
     qint64 notify_timer_start_diff_;
+#else
+    /** @brief Audio output used as a timing marker. */
+    QAudioOutput *marker_stream_;
+#endif
     /** @brief Requested sample rate for the marker stream. */
     quint32 marker_stream_requested_out_rate_;
 
@@ -836,6 +847,7 @@ private:
      */
     bool isStereoAvailable();
 
+#if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
     /**
      * @brief Retrieves an audio output instance configured for silence (marker timing).
      * @return Pointer to a QAudioSink.
@@ -847,6 +859,19 @@ private:
      * @return The configured audio device.
      */
     QAudioDevice getCurrentDeviceInfo();
+#else
+    /**
+     * @brief Retrieves an audio output instance configured for silence (marker timing).
+     * @return Pointer to a QAudioOutput.
+     */
+    QAudioOutput *getSilenceAudioOutput();
+
+    /**
+     * @brief Obtains the underlying QAudioDeviceInfo structure based on user selection.
+     * @return The configured audio device info.
+     */
+    QAudioDeviceInfo getCurrentDeviceInfo();
+#endif
 
     /**
      * @brief Finds a tree widget item located at specific UI coordinates.
