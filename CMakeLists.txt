@@ -3235,6 +3235,9 @@ else()
 endif()
 
 function(add_qt_default_translations _target)
+	if(NOT USE_qt6)
+		return()
+	endif()
 	# Qt provides translation catalogs for strings used in Qt modules.
 	# https://doc.qt.io/qt-6/localization.html#available-catalogs
 	# main_application.cpp loads these via QLibraryInfo::TranslationPath

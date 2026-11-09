@@ -1070,21 +1070,27 @@ set_target_properties(qtui PROPERTIES
 	#AUTORCC ON
 )
 
-# Below uses the Qt 6.2 signature for qt_add_lrelease. Eventually it would
-# be good to use the newer signature in order to merge the Qt provided
-# translation catalogs.
-# https://doc.qt.io/qt-6/qtlinguist-cmake-qt-add-lrelease.html
-qt_add_lrelease(qtui
-	TS_FILES ${WIRESHARK_QT_TS}
-	QM_FILES_OUTPUT_VARIABLE WIRESHARK_QT_QM
-	OPTIONS -silent
-)
-# Translation resource (i18n)
-qt_add_resources(qtui "i18n"
-	PREFIX "/i18n"
-	BASE "${CMAKE_CURRENT_BINARY_DIR}"
-	FILES "${WIRESHARK_QT_QM}"
-)
+if(USE_qt6)
+	# Below uses the Qt 6.2 signature for qt_add_lrelease. Eventually it would
+	# be good to use the newer signature in order to merge the Qt provided
+	# translation catalogs.
+	# https://doc.qt.io/qt-6/qtlinguist-cmake-qt-add-lrelease.html
+	qt_add_lrelease(qtui
+		TS_FILES ${WIRESHARK_QT_TS}
+		QM_FILES_OUTPUT_VARIABLE WIRESHARK_QT_QM
+		OPTIONS -silent
+	)
+	# Translation resource (i18n)
+	qt_add_resources(qtui "i18n"
+		PREFIX "/i18n"
+		BASE "${CMAKE_CURRENT_BINARY_DIR}"
+		FILES "${WIRESHARK_QT_QM}"
+	)
+else()
+	# Qt5-compatible translation generation. The "translations" target is
+	# defined earlier and depends on WIRESHARK_QT_QM.
+	QT5_ADD_TRANSLATION(WIRESHARK_QT_QM ${WIRESHARK_QT_TS} OPTIONS -silent)
+endif()
 
 if(MSVC)
 	set_target_properties(qtui PROPERTIES LINK_FLAGS_DEBUG "${WS_MSVC_DEBUG_LINK_FLAGS}")
