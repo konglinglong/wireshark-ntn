@@ -339,7 +339,7 @@ void InterfaceStatistics::appendCapped(QList<int> &buffer, int value) const
 void InterfaceStatistics::trimToCapacity(QList<int> &buffer) const
 {
     if (buffer.size() > historyCapacity_)
-        buffer.remove(0, buffer.size() - historyCapacity_);
+        buffer = buffer.mid(buffer.size() - historyCapacity_);
 }
 
 void InterfaceStatistics::resetBaselines()
